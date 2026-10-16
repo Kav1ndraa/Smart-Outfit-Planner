@@ -68,4 +68,9 @@ The three best outfits are shown, using different tops where possible.
 
 ## Developed by
 
-Chandan Prasad · TYCS · Tilak College of Science and Commerce (Autonomous), Vashi, Navi Mumbai
+Kavindra Rawal · TYCS (B.Sc. Computer Science)
+
+
+## Style compatibility update
+
+Wardrobe items can be tagged for Men, Women, or Unisex. The planner filters recommendations by the selected style, while unisex items remain available to everyone. Use the `One-piece / Saree / Dress` clothing type for sarees, dresses, and similar one-piece looks so the planner does not pair them with a separate bottom. Existing browser-saved items default to Unisex for backwards compatibility.

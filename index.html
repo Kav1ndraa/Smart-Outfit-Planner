@@ -67,6 +67,14 @@
         <h2 id="planner-h" class="section-title">Outfit planner</h2>
         <div class="planner-grid">
           <form id="planForm" class="card controls" novalidate>
+            <div class="field">
+              <label for="styleAudience">Style for</label>
+              <select id="styleAudience">
+                <option value="men">Men</option>
+                <option value="women">Women</option>
+                <option value="unisex" selected>Unisex / All styles</option>
+              </select>
+            </div>
             <fieldset>
               <legend>Occasion</legend>
               <div class="chips" id="occasionChips"></div>
@@ -102,6 +110,14 @@
         <div class="wardrobe-grid">
           <form id="itemForm" class="card" novalidate>
             <h3>Add a piece</h3>
+            <div class="field">
+              <label for="itemAudience">Who is this item for?</label>
+              <select id="itemAudience">
+                <option value="men">Men</option>
+                <option value="women">Women</option>
+                <option value="unisex" selected>Unisex</option>
+              </select>
+            </div>
             <div class="field">
               <label for="itemName">Name</label>
               <input type="text" id="itemName" maxlength="40" placeholder="e.g. Navy polo shirt" required>
@@ -203,7 +219,7 @@
   <footer class="site-footer">
     <div class="wrap">
       <p><strong>Smart Outfit Planner</strong> · Mini project</p>
-      <p>Chandan Prasad · TYCS (B.Sc. Computer Science) · Tilak College of Science and Commerce, Vashi</p>
+      <p>Kavindra Rawal · TYCS (B.Sc. Computer Science)</p>
     </div>
   </footer>
 

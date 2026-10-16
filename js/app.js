@@ -4,7 +4,8 @@
   'use strict';
 
   /* ---------- Constants ---------- */
-  const CATS = { top: 'Top', bottom: 'Bottom', outer: 'Outerwear', shoes: 'Footwear', acc: 'Accessory' };
+  const CATS = { top: 'Top', bottom: 'Bottom', outer: 'Outerwear', shoes: 'Footwear', acc: 'Accessory', onepiece: 'One-piece / Saree / Dress' };
+  const AUDIENCES = { men: 'Men', women: 'Women', unisex: 'Unisex' };
   const OCCASIONS = ['Casual', 'College', 'Formal', 'Party', 'Festive', 'Sports'];
   const WARMTH = { 1: 'Light', 2: 'Medium', 3: 'Heavy' };
   const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -187,15 +188,36 @@
   let seed = 0;
 
   function sampleWardrobe() {
-    return SAMPLE.map(([name, cat, color, warmth, occasions, rainOk]) => ({ id: uid(), name, cat, color, warmth, occasions, rainOk }));
+    return SAMPLE.map(([name, cat, color, warmth, occasions, rainOk]) => ({ id: uid(), name, cat, color, warmth, occasions, rainOk, audience: 'unisex' }));
   }
   const byId = (id) => wardrobe.find((i) => i.id === id);
 
   /* ---------- Outfit engine ---------- */
   function generate({ occasion, temp, rain, limit = 3, seed: sd = 0, excludeTops = null }) {
-    const pool = (cat) => wardrobe.filter((i) => i.cat === cat && i.occasions.includes(occasion));
+    const audience = $('#styleAudience')?.value || 'unisex';
+    const compatible = (i) => !i.audience || i.audience === 'unisex' || audience === 'unisex' || i.audience === audience;
+    const pool = (cat) => wardrobe.filter((i) => i.cat === cat && i.occasions.includes(occasion) && compatible(i));
+    const onepieces = pool('onepiece');
     let tops = pool('top');
     const bottoms = pool('bottom'), shoes = pool('shoes'), outers = pool('outer'), accs = pool('acc');
+
+    if (onepieces.length) {
+      const shoesForOnepiece = pool('shoes');
+      const accessoriesForOnepiece = pool('acc');
+      const singleLooks = [];
+      onepieces.forEach((piece) => {
+        if (shoesForOnepiece.length) shoesForOnepiece.forEach((shoe) => {
+          const hexes = [piece.color, shoe.color];
+          const color = colorScore(hexes);
+          const warm = Math.max(0, 1 - Math.abs(piece.warmth - targetWarmth(temp)) / 2.5);
+          singleLooks.push({ parts: { top: piece, bottom: null, outer: null, shoes: shoe, acc: accessoriesForOnepiece[0] || null }, color, warm, score: 0.5 * color + 0.45 * warm + (accessoriesForOnepiece.length ? 0.05 : 0) });
+        });
+        else singleLooks.push({ parts: { top: piece, bottom: null, outer: null, shoes: null, acc: accessoriesForOnepiece[0] || null }, color: 1, warm: 1, score: 0.9 });
+      });
+      singleLooks.sort((a,b) => b.score-a.score);
+      const looks = singleLooks.slice(0, limit).map(c => ({ ...c, pct: Math.round(c.score*100), reasons: `One-piece style matched for ${occasion.toLowerCase()}; colour and weather suitability considered.` }));
+      if (looks.length) return { outfits: looks, missing: [], occasion };
+    }
 
     const missing = [];
     if (!tops.length) missing.push('top');
@@ -261,8 +283,9 @@
   function icon(cat, color, size) {
     const sz = size ? ` width="${size}" height="${size}"` : '';
     const stroke = 'stroke="rgba(20,27,48,.55)" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"';
-    const handle = cat === 'acc' ? `<path d="M9.2 9a2.8 2.8 0 0 1 5.6 0" fill="none" ${stroke}/>` : '';
-    return `<svg viewBox="0 0 24 24"${sz} aria-hidden="true" focusable="false">${handle}<path d="${ICON_PATHS[cat]}" fill="${esc(color)}" ${stroke}/></svg>`;
+    const iconCat = cat === 'onepiece' ? 'top' : cat;
+    const handle = iconCat === 'acc' ? `<path d="M9.2 9a2.8 2.8 0 0 1 5.6 0" fill="none" ${stroke}/>` : '';
+    return `<svg viewBox="0 0 24 24"${sz} aria-hidden="true" focusable="false">${handle}<path d="${ICON_PATHS[iconCat]}" fill="${esc(color)}" ${stroke}/></svg>`;
   }
 
   function partsList(parts) {
@@ -328,7 +351,7 @@
       <article class="item">
         <span class="swatch" style="background:${esc(i.color)}26">${icon(i.cat, i.color)}</span>
         <h4>${esc(i.name)}</h4>
-        <p>${esc(CATS[i.cat])} · ${esc(colorName(i.color))} · ${WARMTH[i.warmth]}${i.rainOk ? ' · Rain ok' : ''}</p>
+        <p>${esc(CATS[i.cat] || 'Clothing')} · ${esc(AUDIENCES[i.audience] || 'Unisex')} · ${esc(colorName(i.color))} · ${WARMTH[i.warmth]}${i.rainOk ? ' · Rain ok' : ''}</p>
         <p>${esc(i.occasions.join(', '))}</p>
         <button type="button" class="btn btn-small btn-danger" data-del="${esc(i.id)}" aria-label="Delete ${esc(i.name)}">Delete</button>
       </article>`).join('')
@@ -462,6 +485,7 @@
     runPlanner(false);
 
     $('#temp').addEventListener('input', updateTempLabel);
+    $('#styleAudience').addEventListener('change', () => runPlanner(false));
     $('#planForm').addEventListener('submit', (e) => { e.preventDefault(); runPlanner(false); });
     $('#reshuffle').addEventListener('click', () => runPlanner(true));
     $('#liveWeather').addEventListener('click', liveWeather);
@@ -479,7 +503,7 @@
       if (!occasions.length) { err.textContent = 'Select at least one occasion.'; err.hidden = false; return; }
       err.hidden = true;
       wardrobe.push({
-        id: uid(), name, cat: $('#itemCat').value, color: $('#itemColor').value,
+        id: uid(), name, cat: $('#itemCat').value, audience: $('#itemAudience').value, color: $('#itemColor').value,
         warmth: +$('#itemWarmth').value, occasions, rainOk: $('#itemRain').checked
       });
       store.set('sop_wardrobe', wardrobe);
